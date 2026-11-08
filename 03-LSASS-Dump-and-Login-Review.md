@@ -178,6 +178,11 @@ The event also showed:
 
 GrantedAccess: 0x1FFFFF
 
+### Figure 6 - ProcessHacker Accessing LSASS 
+
+![Figure 1 - ProcessHacker Accessing LSASS](../images/lsass-dump-and-login-review/processhacker-lsass-access.png)
+
+
 ### Understanding GrantedAccess
 
 The observed access mask (0x1FFFFF) represents nearly unrestricted access to the target process, including permissions required to inspect and manipulate process memory. Such access is commonly associated with credential dumping tools.
@@ -325,6 +330,11 @@ ProcessName:
 C:\Windows\System32\services.exe
 IpAddress: -
 
+### Figure 7 - Windows Security Event ID 4624, Logon Type 5 
+
+![Figure 2 - Security Event 4624 Logon Type 5](../images/lsass-dump-and-login-review/security-event-4624-logon-type-5.png)
+
+
 ## Understanding Logon Type 5
 
 Logon Type 5 represents a Windows Service Logon. Windows services authenticate using service accounts as part of normal operating system behavior.
@@ -356,6 +366,10 @@ Observed:
 Logon Type 5
 
 These attributes are consistent with normal Windows service authentication. In the absence of additional suspicious indicators, this event did not provide evidence of credential misuse.
+
+### Figure 8 - Windows Service Authentication 
+
+![Figure 3 - Windows Service Authentication](../images/lsass-dump-and-login-review/security-event-4624-services-process.png)
 
 ## Timeline Reconstruction
 
