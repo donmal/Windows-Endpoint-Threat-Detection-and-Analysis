@@ -1,4 +1,5 @@
 # Windows Event Logs & Finding Evil
+Write-up of Hack the Box Academy labs. Practice work.
 
 A hands-on SOC investigation project focused on detecting and analyzing Windows-based attacker techniques using **Sysmon**, **Windows Event Logs**, **PowerShell**, **Event Viewer**, and **MITRE ATT&CK**.
 
@@ -34,7 +35,7 @@ This project investigates the following Windows attack techniques:
 
 # Investigation Workflow
 
-Each investigation follows a structured methodology commonly used during SOC investigations and DFIR engagements.
+Each investigation follows a structured methodology based on SOC investigation and Digital Forensics and Incident Response (DFIR) principles.
 
 1. Review available telemetry.
 2. Identify suspicious activity.
@@ -66,7 +67,7 @@ Topics include:
 
 ## 2. Unmanaged PowerShell and Injection
 
-Demonstrates how PowerShell can execute without spawning **powershell.exe** by abusing the .NET Common Language Runtime (CLR).
+Demonstrates how PowerShell can execute without spawning **powershell.exe** by hosting PowerShell through the .NET Common Language Runtime (CLR).
 
 Topics include:
 
@@ -83,7 +84,7 @@ Topics include:
 
 ## 3. LSASS Dump and Login Review
 
-Investigates credential dumping activity targeting LSASS memory and validates whether stolen credentials were subsequently abused.
+Investigates suspicious LSASS memory access associated with potential credential dumping and examines subsequent authentication events for evidence of credential misuse.
 
 Topics include:
 
@@ -126,6 +127,8 @@ Includes:
 - Event ID references
 - SOC detection recommendations
 
+The detection concepts are intended for educational analysis and require validation and environment-specific tuning before production deployment.
+
 ---
 
 ## 6. Lessons Learned
@@ -161,14 +164,14 @@ The investigations cover techniques including:
 
 | Technique | ATT&CK ID |
 |-----------|-----------|
-| DLL Search Order Hijacking | T1574 |
-| PowerShell | T1059 |
+| DLL Search Order Hijacking | T1574.001 |
+| PowerShell | T1059.001 |
 | Process Injection | T1055 |
 | OS Credential Dumping: LSASS Memory | T1003.001 |
-| Valid Accounts | T1078 |
 | Windows Command Shell | T1059.003 |
-| Process Discovery | T1057 |
 | System Owner/User Discovery | T1033 |
+
+**ATT&CK Mapping Note**: Valid Accounts (T1078) is excluded because the investigation did not identify malicious credential reuse. Process Discovery (T1057) is also excluded because the documented **whoami** command supports System Owner/User Discovery (T1033), rather than process enumeration.
 
 ---
 
@@ -192,6 +195,8 @@ Through this project, the following SOC analyst skills are demonstrated:
 - Detection engineering
 - MITRE ATT&CK mapping
 - Threat hunting methodology
+
+These skills were developed through practical investigation of controlled laboratory scenarios, with an emphasis on evidence analysis, behavioral detection, and structured SOC reporting.
 
 ---
 
@@ -221,3 +226,5 @@ The investigations reinforce several important defensive principles:
 # Disclaimer
 
 This project was created for educational and defensive cybersecurity purposes. All attack techniques were analyzed within controlled laboratory environments to improve threat hunting, detection engineering, and SOC investigation skills.
+
+The findings represent hands-on laboratory practice rather than investigations conducted in a production SOC environment. Detection examples and Sigma concepts are provided for learning and portfolio demonstration purposes.
