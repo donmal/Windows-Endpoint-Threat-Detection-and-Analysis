@@ -3,27 +3,45 @@
 ## Executive Summary 
 
 This investigation focuses on identifying an Unmanaged PowerShell attack and the associated Process Injection technique used to execute malicious PowerShell code inside a legitimate Windows process.
+
 Unlike traditional PowerShell execution, where commands are launched through powershell.exe, unmanaged PowerShell occurs when PowerShell functionality is loaded directly into another process through the .NET Common Language Runtime (CLR).
+
 The supplied evidence was located in:
+
 C:\Logs\PowerShellExec
+
 Analysis of Sysmon logs revealed that:
+
 •	Calculator.exe loaded the .NET runtime (clr.dll)
-•	This indicates PowerShell execution within Calculator.exe
+
+•	This indicated potential in-process PowerShell hosting or other managed .NET execution.
+
 •	Further investigation identified a CreateRemoteThread event
-•	rundll32.exe injected code into Calculator.exe
-•	The injection enabled the execution of unmanaged PowerShell
+
+•	**rundll32.exe** created a remote thread inside **Calculator.exe**, providing evidence consistent with process injection
+
+•	The combined telemetry suggested a possible unmanaged PowerShell execution chain, although the supplied events did not independently confirm PowerShell commands being executed
+
 This investigation demonstrates how defenders can use Sysmon Image Load events (Event ID 7) and CreateRemoteThread events (Event ID 8) to detect memory-based PowerShell attacks and process injection activity.
 
 ## Investigation Objectives 
 
 The investigation objectives were to:
+
 •	Analyze Sysmon telemetry from **PowerShellExec.evtx**
+
 •	Identify evidence of unmanaged PowerShell execution
+
 •	Determine which process hosted the CLR runtime
+
 •	Determine how PowerShell code was introduced into the host process
+
 •	Identify the source of the injection activity
-•	Reconstruct the complete attack chain
+
+•	Reconstruct the suspected attack chain
+
 •	Map observed behavior to MITRE ATT&CK
+
 •	Identify defensive detection opportunities
 
 ## Background 
@@ -31,7 +49,10 @@ The investigation objectives were to:
 ### What Is Unmanaged PowerShell? 
 
 Under normal circumstances, PowerShell code executes through **powershell.exe**, making it relatively easy for defenders to monitor script execution, command-line arguments, and child processes.
-Unmanaged PowerShell differs significantly because the PowerShell engine is loaded directly into another process through the Microsoft .NET Common Language Runtime (CLR), allowing attackers to execute PowerShell code without launching **powershell.exe**. This technique reduces visibility and enables malicious activity to blend into legitimate Windows processes.
+
+Unmanaged PowerShell differs significantly because the PowerShell engine is loaded directly into another process through the Microsoft .NET Common Language Runtime (CLR), allowing attackers to execute PowerShell code without launching **powershell.exe**. 
+
+This technique reduces visibility and enables malicious activity to blend into legitimate Windows processes.
 
 ### Why Attackers Avoid powershell.exe
 
@@ -43,16 +64,24 @@ powershell.exe
 
 they may use:
 
-Calculator.exe
-spoolsv.exe
-svchost.exe
-explorer.exe
-rundll32.exe
+- Calculator.exe
+
+- spoolsv.exe
+  
+- svchost.exe
+  
+- explorer.exe
+  
+- rundll32.exe
 
 This approach:
+
 •	Hides execution
+
 •	Bypasses simple detections
+
 •	Blends into legitimate activity
+
 •	Reduces PowerShell visibility
 
 ### How PowerShell Runs Inside Another Process
@@ -67,15 +96,19 @@ CLR stands for:
 
 Common Language Runtime
 
-When analysts observe unexpected CLR loading inside unusual processes, it often indicates:
+Unexpected CLR loading in processes that do not typically host managed code may indicate:
 
-.NET Execution
-PowerShell Hosting
-Malicious Code Execution
+- .NET Execution
+  
+- PowerShell Hosting
+  
+- Malicious Code Execution
+
+However, CLR loading alone is not sufficient to distinguish legitimate managed code execution from malicious PowerShell hosting.
 
 ## Investigatoin Scenario
 
-During routine threat hunting, Sysmon logs from the following evidence source were analyzed:
+The investigation was conducted using a provided Sysmon event log dataset to examine potentially suspicious CLR loading and process injection activity.
 
 C:\Logs\PowerShellExec
 
@@ -100,17 +133,27 @@ The investigation focused on identifying evidence of unmanaged PowerShell execut
 
 ## Attack Overview
 
-The attack chain ultimately looked like:
+The observed telemetry supported the following suspected execution chain:
 
 rundll32.exe
+
           ↓
+          
 CreateRemoteThread
+
           ↓
+          
 Calculator.exe
+
           ↓
+          
 Loads clr.dll
+
           ↓
+          
 PowerShell Executes
+
+The remote thread creation and CLR loading were observable through Sysmon telemetry. Actual PowerShell execution would require additional evidence, such as PowerShell engine activity, relevant module loads, or script execution telemetry.
 
 ## Phase 1 – Detecting Unmanaged PowerShell
 
@@ -118,7 +161,7 @@ PowerShell Executes
 
 PowerShell depends on the .NET runtime.
 
-One of the most reliable indicators is:
+One useful indicator of managed .NET execution is the loading of:
 
 clr.dll
 
@@ -164,11 +207,13 @@ clr.dll
 
 returns processes loading the .NET runtime.
 
+The property index should be validated against the Sysmon Event ID 7 schema. Filtering explicitly for Event ID 7 and the **ImageLoaded** field would make this detection more reliable across different datasets.
+
 ## Investigation Findings
 
 The Event ID 7 analysis identified Calculator.exe loading clr.dll, indicating that the .NET Common Language Runtime had been initialized within the process.
 
-Since unmanaged PowerShell relies on the CLR rather than powershell.exe, this represented a strong indicator of PowerShell execution occurring inside Calculator.exe.
+Since in-process PowerShell hosting can rely on the CLR without launching **powershell.exe**, this observation warranted further investigation into possible unmanaged PowerShell activity within **Calculator.exe**.
 
 ## Why Calculator.exe Is Suspicious
 
@@ -190,19 +235,17 @@ Because Calculator.exe is not a typical host for CLR-based execution, this behav
 
 ## Investigation Conclusion
 
-The evidence confirmed that Calculator.exe was the process hosting unmanaged PowerShell execution.
+The evidence confirmed that **Calculator.exe** loaded the CLR runtime, making it a potential host for unmanaged PowerShell or other managed .NET code.
 
-This conclusion was based on CLR loading observed through Sysmon Event ID 7.
+This finding was established through Sysmon Event ID 7 and formed the basis for investigating potential process injection activity.
 
 ## Phase 2 – Process Injection Investigation
 
-Now that the victim process is known:
+Following the identification of suspicious CLR loading, the investigation focused on the process associated with the activity:
 
 Calculator.exe
 
-the next objective becomes:
-
-Who injected into Calculator.exe?
+The next objective was to identify any source process responsible for remote thread creation within **Calculator.exe**.
 
 ## What Is Process Injection?
 
@@ -211,9 +254,13 @@ Process Injection occurs when one process inserts code into another process.
 Example:
 
 Malicious Process
+
         ↓
+        
 Injects Code
+
         ↓
+        
 Legitimate Process
 
 The legitimate process then executes attacker-controlled code.
@@ -223,8 +270,11 @@ The legitimate process then executes attacker-controlled code.
 Benefits include:
 
 •	Hiding malicious code
+
 •	Running under trusted processes
+
 •	Evading security products
+
 •	Avoiding detection by parent-child monitoring
 
 ## Sysmon Event ID 8
@@ -235,7 +285,7 @@ CreateRemoteThread
 
 This occurs when one process creates a thread inside another process.
 
-It is one of the strongest indicators of process injection.
+Remote thread creation is an important indicator of potential process injection, although legitimate applications may also create remote threads.
 
 ## Hunting for Injection Activity
 
@@ -250,7 +300,7 @@ Format-List
 ``` 
 ### What This Query Does
 
-Step 1:
+The query first filters for:
 
 ID=8
 
@@ -258,7 +308,7 @@ Returns only:
 
 CreateRemoteThread events.
 
-Step 2:
+It then searches the event message for:
 
 Calculator.exe
 
@@ -286,25 +336,35 @@ rundll32.exe
 **TargetImage**:
 Calculator.exe
 
-This confirmed that rundll32.exe injected executable code into Calculator.exe before unmanaged PowerShell execution occurred.
+This confirmed that **rundll32.exe** created a remote thread inside **Calculator.exe**, consistent with a potential process injection technique. The event alone did not establish the exact injected payload or confirm that unmanaged PowerShell subsequently executed.
 
 ## Attack Chain
 
-The investigation reconstructed the following execution flow:
+Correlation of Sysmon Event IDs 7 and 8 supported the following suspected execution flow:
 
 rundll32.exe
+
         │
         ▼
+        
 CreateRemoteThread
+
         │
         ▼
+        
 Calculator.exe
+
         │
         ▼
+        
 Load clr.dll
+
         │
         ▼
+        
 Unmanaged PowerShell Execution
+
+The sequence is an analytical reconstruction. Event timestamps and additional process telemetry would be needed to confirm the precise ordering and relationship between the activities.
 
 ## Why rundll32.exe Is Commonly Abused
 
@@ -313,8 +373,11 @@ rundll32.exe is a legitimate Windows utility.
 Attackers abuse it because:
 
 •	Microsoft-signed
+
 •	Trusted by Windows
+
 •	Often allowed by application control
+
 •	Frequently ignored by users
 
 This makes it a popular LOLBIN.
@@ -327,6 +390,8 @@ This makes it a popular LOLBIN.
 | PowerShell | **T1059.001** | Execution of PowerShell commands through the .NET runtime. |
 | Signed Binary Proxy Execution (Rundll32) | **T1218.011** | Abuse of Microsoft's signed rundll32.exe binary to execute malicious activity. |
 
+Analytical Note: T1055 is supported as a suspected technique by the CreateRemoteThread telemetry. T1059.001 and T1218.011 are relevant hypotheses but would require further evidence of PowerShell execution and malicious use of **rundll32.exe** to be confirmed.
+
 ## Detection Opportunities
 
 ### Detect CLR Loading
@@ -337,11 +402,17 @@ clr.dll
 
 loaded by:
 
-Calculator.exe
-notepad.exe
-explorer.exe
-spoolsv.exe
-svchost.exe
+• Calculator.exe
+
+• notepad.exe
+
+• explorer.exe
+
+• spoolsv.exe
+
+• svchost.exe
+
+Prioritize unexpected CLR loading based on established process baselines rather than treating every CLR load as malicious.
 
 ### Detect CreateRemoteThread
 
@@ -351,9 +422,7 @@ Event ID 8
 
 especially when:
 
-SourceImage ≠ Parent Process
-
-or when unusual process pairs appear.
+The source process is unexpected for the target process, or when remote thread creation involves unusual process pairs.
 
 ### Detect LOLBIN Abuse
 
@@ -361,9 +430,11 @@ Alert on:
 
 rundll32.exe
 
-creating:
+acting as the source process in:
 
 CreateRemoteThread Events
+
+Correlate these events with process command-line arguments, target process identity, loaded modules, and additional endpoint telemetry to reduce false positives.
 
 ## Screenshots
 
@@ -405,21 +476,26 @@ TargetImage = Calculator.exe.
 
 ## Key Findings 
 
-•	CLR loading identified unmanaged PowerShell execution.
+•	CLR loading identified potential in-process PowerShell hosting.
+
 •	Calculator.exe hosted managed code unexpectedly.
+
 •	Sysmon Event ID 7 provided the initial evidence.
-•	Sysmon Event ID 8 revealed process injection activity.
+
+•	Sysmon Event ID 8 revealed remote thread creation consistent with potential process injection.
+
 •	rundll32.exe performed CreateRemoteThread into Calculator.exe.
-•	The attack leveraged a trusted Microsoft LOLBIN.
-•	Correlating Event IDs 7 and 8 enabled reconstruction of the complete attack chain.
+
+•	The attack potentially leveraged a trusted Microsoft LOLBIN.
+
+•	Correlating Event IDs 7 and 8 enabled reconstruction of the suspected attack chain.
 
 ## Conclusion
 
-This investigation demonstrated how memory-resident PowerShell attacks can be detected through Sysmon telemetry even when attackers avoid using powershell.exe directly.
+This investigation demonstrated how memory-resident PowerShell attacks can be investigated through Sysmon telemetry even when attackers avoid using powershell.exe directly.
 
-By identifying CLR loading inside Calculator.exe and correlating CreateRemoteThread events, it was possible to reconstruct the full attack chain and determine that rundll32.exe injected code into Calculator.exe, which subsequently executed unmanaged PowerShell.
+By identifying CLR loading inside **Calculator.exe** and correlating CreateRemoteThread events, the investigation established a suspicious relationship between **rundll32.exe** and **Calculator.exe**, consistent with potential process injection and unmanaged PowerShell hosting.
 
 This case highlights the importance of monitoring CLR loading, CreateRemoteThread activity, and LOLBIN abuse when hunting advanced Windows threats.
 
-The investigation demonstrates how correlating Sysmon Image Load events with CreateRemoteThread telemetry enables defenders to detect fileless PowerShell attacks even when traditional PowerShell process monitoring is bypassed.
-
+Correlating Sysmon Image Load events with CreateRemoteThread telemetry provides valuable detection opportunities for identifying suspicious in-memory execution, particularly when traditional process-name-based monitoring does not reveal PowerShell activity.
