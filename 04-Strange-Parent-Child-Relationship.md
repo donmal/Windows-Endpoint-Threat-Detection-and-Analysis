@@ -128,6 +128,10 @@ Only Sysmon Event ID 1 (Process Creation) events were reviewed to focus the inve
 
 This reduced the dataset and allowed rapid identification of suspicious process creation events.
 
+### Figure 9 - Sysmon Event ID 1: Process Creation 
+
+![Figure 1 - Sysmon Process Creation](images/strange-parent-child-relationship/strangeppid-sysmon-event-id-1.png)
+
 ### Initial Findings
 
 Only a small number of process creation events were observed.
@@ -210,6 +214,10 @@ Most importantly:
 ParentImage:
 C:\Windows\System32\WerFault.exe
 
+### Figure 10 - PowerShell Investigation Results 
+
+![Figure 3 - PowerShell Validation](images/strange-parent-child-relationship/powershell-parent-child-validation.png)
+
 ### Process Tree Reconstruction
 
 Observed:
@@ -225,6 +233,10 @@ cmd.exe
 whoami
 
 The **whoami** command was executed through **cmd.exe**; it is shown as a command in the execution chain rather than a separately confirmed child process.
+
+### Figure 10 - WerFault.exe as Parent Process 
+
+![Figure 2 - WerFault Parent Process](images/strange-parent-child-relationship/werfault-cmd-parent-child.png)
 
 ### Why This Is Suspicious
 
