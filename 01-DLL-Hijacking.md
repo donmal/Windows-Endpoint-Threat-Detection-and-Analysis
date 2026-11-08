@@ -187,6 +187,10 @@ This combination immediately stood out.
 
 At this stage, multiple indicators converged, suggesting that the observed activity was unlikely to represent legitimate software execution.
 
+### Figure 1 - PowerShell: Suspicious DLL Load
+
+![Figure 1 - PowerShell Suspicious DLL Load](../images/dll-hijacking/powershell-suspicious-dll-load.jpeg)
+
 ### Why This Event Is Suspicious
 
 Several indicators were present:
@@ -254,6 +258,10 @@ The saved Sysmon log located at:
 C:\Logs\DLLHijack\DLLHijack.evtx
 
 was opened and filtered to display only **Event ID 7** entries. This manual validation confirmed the same unsigned DLL loading activity previously identified through PowerShell analysis.
+
+### Figure 2 - Event Viewer: Event ID 7
+
+![Figure 2 - Event Viewer Event ID 7](../images/dll-hijacking/event-viewer-event-id-7.jpeg)
 
 ### Reviewing Event Details
 
