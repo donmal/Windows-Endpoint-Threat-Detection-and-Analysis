@@ -180,8 +180,7 @@ GrantedAccess: 0x1FFFFF
 
 ### Figure 6 - ProcessHacker Accessing LSASS 
 
-![Figure 1 - ProcessHacker Accessing LSASS](../images/lsass-dump-and-login-review/processhacker-lsass-access.png)
-
+![Figure 1 - ProcessHacker Accessing LSASS](images/lsass-dump-and-login-review/processhacker-lsass-access.png)
 
 ### Understanding GrantedAccess
 
@@ -332,8 +331,7 @@ IpAddress: -
 
 ### Figure 7 - Windows Security Event ID 4624, Logon Type 5 
 
-![Figure 2 - Security Event 4624 Logon Type 5](../images/lsass-dump-and-login-review/security-event-4624-logon-type-5.png)
-
+![Figure 2 - Security Event 4624 Logon Type 5](images/lsass-dump-and-login-review/security-event-4624-logon-type-5.png)
 
 ## Understanding Logon Type 5
 
@@ -369,7 +367,7 @@ These attributes are consistent with normal Windows service authentication. In t
 
 ### Figure 8 - Windows Service Authentication 
 
-![Figure 3 - Windows Service Authentication](../images/lsass-dump-and-login-review/security-event-4624-services-process.png)
+![Figure 3 - Windows Service Authentication](images/lsass-dump-and-login-review/security-event-4624-services-process.png)
 
 ## Timeline Reconstruction
 
