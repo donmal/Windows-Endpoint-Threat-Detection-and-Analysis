@@ -215,6 +215,11 @@ The Event ID 7 analysis identified Calculator.exe loading clr.dll, indicating th
 
 Since in-process PowerShell hosting can rely on the CLR without launching **powershell.exe**, this observation warranted further investigation into possible unmanaged PowerShell activity within **Calculator.exe**.
 
+## Figure 5 - CLR Loading in Calculator.exe 
+
+![Figure 1 - CLR Loading in Calculator.exe](images/unmanaged-powershell/calculator-clr-loading.png)
+
+
 ## Why Calculator.exe Is Suspicious
 
 Calculator.exe is not expected to host managed .NET workloads during normal Windows operation.
@@ -325,6 +330,10 @@ and
 
 TargetImage:
 C:\Users\Administrator\Desktop\Calculator.exe
+
+### Figure 6 - Remote Thread Creation: rundll32.exe to Calculator.exe
+
+![Figure 2 - Remote Thread Creation](images/unmanaged-powershell/rundll32-calculator-remote-thread.png)
 
 ## Interpreting the Event
 
