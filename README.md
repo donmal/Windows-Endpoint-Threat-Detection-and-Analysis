@@ -1,4 +1,4 @@
-# Windows Event Logs & Finding Evil
+# Windows Endpoint Threat Detection and Analysis
 Write-up of Hack the Box Academy labs. Practice work.
 
 A hands-on SOC investigation project focused on detecting and analyzing Windows-based attacker techniques using **Sysmon**, **Windows Event Logs**, **PowerShell**, **Event Viewer**, and **MITRE ATT&CK**.
