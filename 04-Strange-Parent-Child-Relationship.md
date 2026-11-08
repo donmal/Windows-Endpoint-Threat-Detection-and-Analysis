@@ -13,26 +13,35 @@ C:\Logs\StrangePPID
 Analysis of Sysmon Process Creation events revealed that:
 
 •	WerFault.exe spawned cmd.exe
+
 •	The command executed was:
 
 cmd.exe /c whoami
 
 •	This execution chain is highly unusual
+
 •	WerFault.exe is not expected to launch command shells
+
 •	The activity indicates temporary command execution through an abnormal parent-child relationship
 
-This investigation demonstrates how process creation telemetry can expose attacker tradecraft even when no malware is dropped to disk.
+This investigation demonstrates how process creation telemetry can expose suspicious execution behaviour through abnormal parent-child relationships, even when the available evidence does not identify a malicious executable or payload.
 
 ## Investigation Objectives
 
 The goals of this investigation were:
 
 •	Analyze StrangePPID.evtx
+
 •	Understand Parent Process relationships
+
 •	Identify abnormal process trees
+
 •	Investigate suspicious command execution
+
 •	Reconstruct attacker activity
+
 •	Map activity to MITRE ATT&CK
+
 •	Develop detection opportunities
 
 ## Background
@@ -43,13 +52,15 @@ Every process created in Windows has a parent process responsible for its creati
 
 ### Parent Process Identifier (PPID)
 
-The Parent Process Identifier (PPID) uniquely identifies the process responsible for creating a child process. Correlating process names with their PPIDs enables investigators to reconstruct execution chains and detect abnormal parent-child relationships.
+The Parent Process Identifier (PPID) identifies the process recorded as the parent of a newly created process. Since process identifiers can be reused, analysts should correlate PPIDs with process creation timestamps and unique identifiers such as Sysmon ProcessGuid.
+
+Correlating process names with their PPIDs enables investigators to reconstruct execution chains and detect abnormal parent-child relationships.
 
 ### Why Parent-Child Analysis Matters
 
 Many attacks leave traces through abnormal process trees.
-Security analysts often detect malicious activity by asking:
-Does this parent-child relationship make sense?
+
+Security analysts assess whether observed parent-child relationships are consistent with expected application behaviour, system functionality and established process execution baselines.
 
 ### Suspicious Parent-Child Relationships
 
@@ -68,14 +79,16 @@ It is responsible for collecting crash information, generating diagnostic report
 During the investigation, WerFault.exe was observed spawning cmd.exe, producing the following execution chain:
 
 WerFault.exe
+
       ↓
+      
 cmd.exe
 
 This behavior is inconsistent with the normal functionality of Windows Error Reporting and represents an abnormal parent-child relationship requiring further investigation.
 
 ## Investigation Scenario
 
-The SOC receives logs from:
+The investigation was conducted using a provided Windows Sysmon event log dataset located at:
 
 C:\Logs\StrangePPID
 
@@ -95,7 +108,9 @@ Relevant Sysmon Event:
 
 ## Why Event ID 1?
 
-Sysmon Event ID 1 records detailed process creation telemetry, including executable names, command-line arguments, parent processes and process identifiers. These fields provide sufficient context to reconstruct process execution chains and identify abnormal parent-child relationships.
+Sysmon Event ID 1 records detailed process creation telemetry, including executable names, command-line arguments, parent processes and process identifiers. 
+
+These fields provide sufficient context to reconstruct process execution chains and identify abnormal parent-child relationships.
 
 ## Phase 1 – Event Viewer Analysis
 
@@ -109,12 +124,15 @@ The investigation began by reviewing StrangePPID.evtx within Event Viewer.
 
 ### Filtering Events
 
-Only Sysmon Event ID 1 (Process Creation) events were reviewed to focus the investigation on process execution activity. This reduced the dataset and allowed rapid identification of suspicious process creation events.
+Only Sysmon Event ID 1 (Process Creation) events were reviewed to focus the investigation on process execution activity. 
+
+This reduced the dataset and allowed rapid identification of suspicious process creation events.
 
 ### Initial Findings
 
 Only a small number of process creation events were observed.
-This immediately narrows the investigation scope.
+
+The limited number of recorded events allowed the investigation to focus on individual process execution relationships and associated command-line activity.
 
 ### Suspicious Event Discovery
 
@@ -128,7 +146,7 @@ and
 CommandLine:
 cmd.exe /c whoami
 
-### Why Is This Interesting?
+### Command Execution Analysis
 
 The command:
 
@@ -137,17 +155,24 @@ whoami
 is commonly used by attackers to:
 
 •	Identify privileges
+
 •	Confirm execution
+
 •	Verify access level
+
 •	Test code execution
+
+Although **whoami** is a legitimate Windows utility, its execution through **cmd.exe** under an unexpected parent process can indicate reconnaissance or validation of command execution.
 
 ### Understanding cmd.exe /c
 
 The `/c` argument instructs cmd.exe to execute the specified command and terminate immediately after completion, making it a common choice for short-lived command execution.
 
-### Why Attackers Like It
+### Security Implications of Short-Lived Command Execution
 
 Short-lived command interpreters reduce the attacker's footprint and frequently appear during reconnaissance, validation of code execution and privilege verification.
+
+However, short-lived shell execution is not inherently malicious and should be evaluated alongside parent process identity, command-line arguments and surrounding telemetry.
 
 ## Phase 2 – PowerShell Analysis
 
@@ -165,6 +190,8 @@ fl
 ### Query Explanation
 
 The PowerShell query filters Sysmon Process Creation (Event ID 1) events and searches for executions involving cmd.exe before displaying the complete event record for detailed analysis.
+
+The query relies on the positional event property **Properties[4]**, which should be validated against the Sysmon event schema. In standard Sysmon Event ID 1 records, this property commonly corresponds to the process image path. Filtering by named event fields would improve reliability across different Sysmon configurations.
 
 ### Investigation Findings
 
@@ -188,10 +215,16 @@ C:\Windows\System32\WerFault.exe
 Observed:
 
 WerFault.exe
+
         ↓
+        
 cmd.exe
+
         ↓
+        
 whoami
+
+The **whoami** command was executed through **cmd.exe**; it is shown as a command in the execution chain rather than a separately confirmed child process.
 
 ### Why This Is Suspicious
 
@@ -210,6 +243,8 @@ cmd.exe
 
 is an abnormal relationship.
 
+This relationship warrants investigation because Windows Error Reporting does not ordinarily require launching a command interpreter to execute user-discovery commands.
+
 ## Investigation Outcome
 
 The investigation identified:
@@ -220,11 +255,13 @@ The investigation identified:
 
 Although WerFault.exe initiated the execution chain, cmd.exe was the process responsible for executing the command.
 
+The observed process relationship was consistent with suspicious command execution, but the available evidence did not independently establish the initial execution mechanism or confirm malicious intent.
+
 ## Attack Timeline
 
 ### Stage 1
 
-Process creation occurs.
+The process creation event identified the recorded parent process:
 
 WerFault.exe
 
@@ -242,9 +279,7 @@ whoami
 
 ### Stage 4
 
-Process exits.
-
-Temporary Execution Complete
+The **/c** argument instructed **cmd.exe** to terminate after executing the specified command. A separate process termination event would be required to confirm the actual exit.
 
 ## Detection Opportunities
 
@@ -252,11 +287,15 @@ Temporary Execution Complete
 
 Monitor:
 
-ParentImage
-ChildImage
-CommandLine
+- ParentImage
+  
+- Image
+
+- CommandLine
 
 relationships.
+
+Correlate these fields with **ProcessGuid**, **ParentProcessGuid** and process creation timestamps to improve process-tree reconstruction.
 
 ### WerFault Abuse
 
@@ -266,11 +305,15 @@ WerFault.exe
 
 launching:
 
-cmd.exe
-powershell.exe
-wscript.exe
-cscript.exe
-rundll32.exe
+- cmd.exe
+  
+- powershell.exe
+  
+- wscript.exe
+  
+- cscript.exe
+  
+- rundll32.exe
 
 ### Short-Lived Shells
 
@@ -292,14 +335,17 @@ Normal Parent Processes
 
 and alert on deviations.
 
+Detection logic should prioritize unusual parent-child combinations alongside suspicious command-line activity to reduce false positives from legitimate administrative operations.
+
 ## MITRE ATT&CK Mapping
 
 | MITRE ATT&CK Technique | Technique ID | Investigation Relevance |
 |-------------------------|--------------|--------------------------|
 | Command and Scripting Interpreter | T1059 | Execution of command interpreters |
 | Windows Command Shell | T1059.003 | Execution of cmd.exe |
-| Process Discovery | T1057 | Host reconnaissance through command execution |
 | System Owner/User Discovery | T1033 | Discovery using whoami |
+
+**Analytical Note**: T1059.003 and T1033 are the most directly relevant techniques because the observed event contains **cmd.exe /c whoami**. T1057 (Process Discovery) is not supported by the documented command, which identifies the current user rather than enumerating running processes.
 
 ## Screenshots
 
@@ -360,15 +406,23 @@ whoami
 ## Key Findings
 
 •	Event ID 1 identified abnormal process creation activity.
+
 •	WerFault.exe spawned cmd.exe.
+
 •	cmd.exe executed the command `whoami`.
+
 •	The execution chain represented temporary command execution.
+
 •	Parent-child analysis exposed suspicious behaviour.
+
+- The observed activity aligned with MITRE ATT&CK techniques T1059.003 (Windows Command Shell) and T1033 (System Owner/User Discovery).
 
 ## Conclusion
 
 This investigation demonstrates the value of parent-child process analysis during threat hunting and incident response.
 
-Although no malware was written to disk, Event ID 1 telemetry exposed suspicious activity through an abnormal process relationship. The investigation revealed that WerFault.exe launched cmd.exe, which executed a temporary reconnaissance command (whoami) before terminating.
+Sysmon Event ID 1 telemetry exposed suspicious command execution through an abnormal parent-child process relationship, without requiring direct evidence of a malicious executable.
+
+The investigation revealed that WerFault.exe launched cmd.exe, which executed a temporary reconnaissance command (whoami) using the **/c** argument to terminate after command execution. 
 
 Such behavior highlights why SOC analysts should continuously monitor unusual parent-child relationships, as attackers frequently abuse trusted Windows binaries to hide malicious execution and evade traditional detections.
