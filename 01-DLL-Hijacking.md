@@ -271,6 +271,10 @@ Signed: False
 
 This confirmed the PowerShell findings.
 
+### Figure 3 - Unsigned DLL Confirmation
+
+![Figure 3 - Unsigned DLL Confirmation](../images/dll-hijacking/unsigned-dll-confirmation.png)
+
 ### XML Validation
 
 Switching to:
@@ -300,6 +304,10 @@ This provides direct evidence of:
 •	The DLL
 
 •	The unsigned status
+
+### Figure 4 - XML: Process and DLL Path 
+
+![Figure 4 - XML Process and DLL Path](../images/dll-hijacking/xml-process-and-dll-path.png)
 
 ### Determining the Responsible Process
 
