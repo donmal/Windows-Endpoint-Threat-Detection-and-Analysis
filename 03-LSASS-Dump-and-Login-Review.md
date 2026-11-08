@@ -11,30 +11,43 @@ C:\Logs\Dump
 Analysis of Sysmon Process Access events revealed that:
 
 •	ProcessHacker.exe accessed lsass.exe
-•	The process requested extremely high privileges (0x1FFFFF)
-•	The activity is consistent with credential dumping
-•	The dump occurred before subsequent authentication activity
 
-A secondary review of Windows Security logs was then performed to determine whether an attacker successfully used the harvested credentials.
+•	The process requested extensive process access permissions (0x1FFFFF)
+
+•	The activity is consistent with credential dumping
+
+•	The LSASS access event prompted a review of subsequent authentication activity
+
+A secondary review of Windows Security logs was then performed to determine whether an attacker successfully used the potentially compromised credentials.
 
 The review found:
 
-•	No suspicious logons occurred after the dump
-•	Only legitimate service authentication activity was observed
+•	No suspicious logons were identified in the reviewed Security events
+
+•	The documented authentication event was consistent with legitimate Windows service activity
+
 •	No evidence of credential reuse was identified
 
 ## Investigation Objectives 
 
 The goals of this investigation were:
 
-•	Identify the process responsible for the LSASS dump
+•	Identify the process responsible for suspicious LSASS access
+
 •	Understand how credential dumping appears in Sysmon
+
 •	Analyze Process Access events
+
 •	Determine whether harvested credentials were abused
+
 •	Review successful logon events
+
 •	Differentiate legitimate from malicious authentication activity
+
 •	Reconstruct the attack timeline
+
 •	Identify detection opportunities
+
 •	Map activity to MITRE ATT&CK
 
 ## Background
@@ -63,10 +76,12 @@ OS Credential Dumping: LSASS Memory
 
 ### Investigation Scope
 
-The investigation focused on answering two primary questions:
+The investigation was conducted using provided Sysmon and Windows Security event log datasets to examine suspicious LSASS process access and potential follow-on credential abuse.
 
-•	Which process accessed LSASS memory? 
-•	Was there evidence that harvested credentials were subsequently used for authentication?
+The investigation focused on two primary objectives:
+
+•	Identify the process that accessed LSASS memory
+•	Determine whether subsequent authentication events indicated potential credential reuse
 
 ## Data Sources
 
@@ -115,6 +130,8 @@ Format-List
 
 The query filters Sysmon Process Access (Event ID 10) events targeting lsass.exe, then expands the complete event record for detailed review.
 
+The positional property index (**Properties[8]**) should be validated against the event schema. In standard Sysmon Event ID 10 records, **TargetImage** is commonly exposed at a different index, so filtering by the named **TargetImage** field is preferable for reliable detection.
+
 ## Investigation Findings
 
 The results revealed:
@@ -134,18 +151,23 @@ The SourceImage field identifies the process requesting access, while TargetImag
 In this investigation:
 
 •	SourceImage = ProcessHacker.exe 
+
 •	TargetImage = lsass.exe 
 
-This combination strongly indicates credential dumping behaviour.
+This combination strongly indicates potential credential dumping behaviour.
 
 ### Why This Matters
 
 The event tells us:
 
 ProcessHacker.exe
+
         ↓
+        
 Accessed
+
         ↓
+        
 lsass.exe
 
 This behavior is strongly associated with credential dumping.
@@ -165,37 +187,46 @@ The observed access mask (0x1FFFFF) represents nearly unrestricted access to the
 Full access allows:
 
 •	Memory reading
+
 •	Memory writing
+
 •	Handle duplication
+
 •	Process manipulation
 
 These permissions are commonly required for:
 
-Credential Dumping
+### Credential Dumping
+
+Although this access mask indicates extensive permissions, the Process Access event alone does not confirm that LSASS memory was read, dumped to disk, or that credentials were successfully extracted.
 
 ## Attack Reconstruction
 
-The attack chain becomes:
+The observed evidence supports the following potential credential dumping sequence:
 
 ProcessHacker.exe
+
           ↓
+
 Opens lsass.exe
+
           ↓
+          
 Obtains Full Access
+
           ↓
+          
 Reads Process Memory
+
           ↓
+          
 Credentials Extracted
 
-## Determining the Answer
+The Sysmon evidence confirms process access and the granted permissions. Memory dumping and credential extraction remain unverified stages in this reconstruction.
 
-The question asks:
+## Identified Source Process
 
-Which process performed the LSASS dump?
-
-The responsible process is:
-
-ProcessHacker.exe
+The investigation identified **ProcessHacker.exe** as the process responsible for accessing LSASS with extensive permissions. This activity was consistent with potential credential dumping and warranted further investigation.
 
 ## Screenshots 
 
@@ -231,23 +262,23 @@ GrantedAccess = 0x1FFFFF.
 
 ## Phase 2 – Reviewing Authentication Activity
 
-After identifying the dump, the next question becomes:
-
-Did the attacker use the stolen credentials?
+Following the identification of suspicious LSASS access, the investigation proceeded to review Windows Security logs for evidence of subsequent authentication activity potentially associated with credential misuse.
 
 ### Why This Matters
 
-A credential dump alone does not prove compromise.
-
-The attacker must actually use the credentials.
+Suspicious LSASS access does not necessarily establish successful credential extraction or subsequent credential abuse. Reviewing authentication events helps determine whether potential credential theft was followed by suspicious account activity.
 
 Typical follow-up activity includes:
 
-Pass-the-Hash
-RDP Login
-Network Logon
-Remote Administration
-Lateral Movement
+- Pass-the-Hash
+  
+- RDP Login
+  
+- Network Logon
+  
+- Remote Administration
+  
+- Lateral Movement
 
 ### Reviewing Security Logs
 
@@ -267,11 +298,14 @@ An account was successfully logged on
 
 ### Event Viewer Procedure
 
+The Windows Security event log was reviewed using Event Viewer:
+
 1.	Open SecurityLogs.evtx
-2.	Select:
-Filter Current Log
-3.	Enter:
-4624
+   
+2.	Select **Filter Current Log**
+   
+3.	Enter **4624**
+   
 4.	Review all successful logons occurring after the dump.
 
 ### What We Expect to See
@@ -295,7 +329,7 @@ IpAddress: -
 
 Logon Type 5 represents a Windows Service Logon. Windows services authenticate using service accounts as part of normal operating system behavior.
 
-Observed Event
+## Observed Event
 
 - Logon Type: 5
 - TargetUserName: SYSTEM
@@ -321,45 +355,39 @@ Observed:
 
 Logon Type 5
 
-None of these indicate attacker activity.
+These attributes are consistent with normal Windows service authentication. In the absence of additional suspicious indicators, this event did not provide evidence of credential misuse.
 
 ## Timeline Reconstruction
 
-### Stage 1
-
-Credential Dump:
+### Stage 1 - Suspicious LSASS Access
 
 ProcessHacker.exe
+
         ↓
+        
 LSASS Access
 
-### Stage 2
+### Stage 2 - Potential Credential Exposure
 
-Credential Review:
+The extensive access permissions raised the possibility of credential extraction, although successful dumping was not independently confirmed.
 
-Attacker Obtains Credentials
-
-### Stage 3
-
-Security Log Review:
+### Stage 3 - Security Log Review
 
 4624 Events
 
-### Stage 4
+### Stage 4 - Authentication Analysis
 
-Authentication Analysis:
-
-Only Service Logons Found
+The documented authentication evidence showed a Windows service logon:
 
 SYSTEM
 LogonType 5
 services.exe
 
-### Stage 5
-
-Conclusion:
+### Stage 5 - Conclusion
 
 No Malicious Login Detected
+
+No evidence of malicious credential reuse was identified in the reviewed authentication events.
 
 ### Detection Opportunities
 
@@ -369,19 +397,25 @@ Alert when:
 
 TargetImage = lsass.exe
 
+Correlate LSASS access events with the source process, granted access mask, executable path, and expected system behaviour to reduce false positives.
+
 #### High Granted Access
 
 Alert on:
 
 0x1FFFFF
 
+Prioritize extensive access masks when they involve unexpected processes accessing LSASS, rather than treating the access mask alone as definitive evidence of credential dumping.
+
 #### Known Dumping Tools
 
 Alert when:
 
-ProcessHacker.exe
-Mimikatz.exe
-procdump.exe
+- ProcessHacker.exe
+  
+- Mimikatz.exe
+  
+- procdump.exe
 
 access:
 
@@ -393,12 +427,17 @@ After any LSASS access event:
 
 Monitor:
 
-4624
-4625
-4648
-4672
+- 4624
+  
+- 4625
+  
+- 4648
+  
+- 4672
 
 for credential abuse.
+
+Correlate authentication events using timestamps, account names, logon types, source addresses, and privileged logon indicators to identify suspicious post-access activity.
 
 ## MITRE ATT&CK Mapping
 
@@ -408,22 +447,32 @@ for credential abuse.
 | Valid Accounts | T1078 | Potential use of harvested credentials |
 | Pass the Hash | T1550.002 | Possible follow-on activity after credential theft |
 
+**Analytical Note**: T1003.001 is relevant to the suspicious LSASS access observed in this investigation. T1078 and T1550.002 represent possible follow-on techniques, but the reviewed evidence did not establish that either technique occurred.
+
 ## Key Findings
 
 •	LSASS access was identified.
+
 •	ProcessHacker.exe accessed lsass.exe.
-•	Full process permissions were granted.
-•	Activity is consistent with credential dumping.
+
+•	Extensive process access permissions (0x1FFFFF) were observed.
+
+•	Activity is consistent with potential credential dumping.
+
 •	Security logs were reviewed.
-•	No suspicious authentication followed the dump.
+
+•	No suspicious authentication was identified in the documented log review.
+
 •	No evidence of credential abuse was found.
 
 ## Conclusion
 
 This investigation demonstrates how Sysmon and Windows Security logs complement each other during incident response.
 
-Sysmon Event ID 10 provided evidence of credential dumping activity by ProcessHacker.exe against LSASS, while Security Event ID 4624 allowed verification of post-compromise authentication behavior.
+Sysmon Event ID 10 identified **ProcessHacker.exe** accessing LSASS with extensive permissions, providing an indicator of potential credential dumping. Windows Security Event ID 4624 was then used to examine subsequent successful authentication activity.
 
-Although credential dumping occurred, no evidence was found that the harvested credentials were subsequently used for malicious authentication activity. The observed logons were legitimate Windows service logons and did not indicate attacker access.
+Although the observed LSASS access was consistent with credential dumping behaviour, the available telemetry did not independently confirm successful credential extraction or subsequent credential reuse.
 
-This workflow reflects a common SOC investigation pattern: identify credential theft, then immediately determine whether those credentials were successfully weaponized.
+The observed logons were legitimate Windows service logons and did not indicate attacker access.
+
+This workflow reflects a common SOC investigation approach: identify suspicious credential-access activity, assess the potential exposure, and correlate endpoint telemetry with authentication logs to investigate possible credential misuse.
