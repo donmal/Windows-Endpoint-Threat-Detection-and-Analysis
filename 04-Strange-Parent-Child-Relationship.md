@@ -359,62 +359,6 @@ Detection logic should prioritize unusual parent-child combinations alongside su
 
 **Analytical Note**: T1059.003 and T1033 are the most directly relevant techniques because the observed event contains **cmd.exe /c whoami**. T1057 (Process Discovery) is not supported by the documented command, which identifies the current user rather than enumerating running processes.
 
-## Screenshots
-
-### Figure 1. Opening StrangePPID.evtx in Event Viewer for process creation analysis.
-
-Opening StrangePPID.evtx.
-
-[INSERT SCREENSHOT]
-
-### Figure 2. Event Viewer filtered to display Sysmon Event ID 1 (Process Creation) events.
-
-Filtering Event ID 1.
-
-[INSERT SCREENSHOT]
-
-### Figure 3. Process creation event selected for detailed investigation.
-
-Process Create event.
-
-[INSERT SCREENSHOT]
-
-### Figure 4. Event details identifying cmd.exe as the created process. 
-
-Image = cmd.exe.
-
-[INSERT SCREENSHOT]
-
-### Figure 5. Command line showing execution of ‘cmd.exe /c whoami’.
-
-CommandLine = cmd.exe /c whoami.
-
-[INSERT SCREENSHOT]
-
-### Figure 6. ParentImage field identifying WerFault.exe as the parent process.
-
-ParentImage = WerFault.exe.
-
-[INSERT SCREENSHOT]
-
-### Figure 7. PowerShell Get-WinEvent output confirming the abnormal parent-child relationship.
-
-PowerShell Get-WinEvent output.
-
-[INSERT SCREENSHOT]
-
-### Figure 8. Reconstructed process tree illustrating WerFault.exe spawning cmd.exe to execute whoami. 
-
-Reconstructed process tree.
-
-WerFault.exe
-      ↓
-cmd.exe
-      ↓
-whoami
-
-[INSERT SCREENSHOT]
-
 ## Key Findings
 
 •	Event ID 1 identified abnormal process creation activity.
