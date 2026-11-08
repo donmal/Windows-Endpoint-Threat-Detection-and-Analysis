@@ -217,7 +217,7 @@ Since in-process PowerShell hosting can rely on the CLR without launching **powe
 
 ## Figure 5 - CLR Loading in Calculator.exe 
 
-![Figure 1 - CLR Loading in Calculator.exe](https://github.com/USERNAME/Windows-Endpoint-Threat-Detection-and-Analysis/blob/main/images/unmanaged-powershell/calculator-clr-loading.png?raw=true)
+![Figure 1 - CLR Loading in Calculator.exe](images/unmanaged-powershell-and-injection/calculator-clr-loading.png)
 
 ## Why Calculator.exe Is Suspicious
 
@@ -332,7 +332,7 @@ C:\Users\Administrator\Desktop\Calculator.exe
 
 ### Figure 6 - Remote Thread Creation: rundll32.exe to Calculator.exe
 
-![Figure 2 - rundll32.exe to Calculator.exe](https://github.com/USERNAME/Windows-Endpoint-Threat-Detection-and-Analysis/blob/main/images/unmanaged-powershell/rundll32-calculator-remote-thread.png?raw=true)
+![Figure 2 - rundll32.exe to Calculator.exe](images/unmanaged-powershell-and-injection/rundll32-calculator-remote-thread.png)
 
 ## Interpreting the Event
 
