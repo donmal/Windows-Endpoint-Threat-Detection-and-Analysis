@@ -7,19 +7,26 @@ This document consolidates the detection opportunities, Indicators of Compromise
 The analysis covered:
 
 •	DLL Hijacking
+
 •	Unmanaged PowerShell Execution
+
 •	Process Injection
+
 •	LSASS Credential Dumping
+
 •	Suspicious Logon Activity
+
 •	Strange Parent-Child Relationships
 
 The objective is to transform investigation findings into reusable detection logic suitable for SOC operations, threat hunting, and SIEM alert development.
+
+The detection concepts presented below are derived from the observed lab telemetry. They represent investigative starting points and would require testing, baseline validation, and false-positive tuning before operational deployment.
 
 ## 1. DLL Hijacking Detection
 
 ### Attack Summary
 
-The investigation identified DLL Search Order Hijacking involving **Dism.exe**, which loaded an unsigned **DismCore.dll** from an unexpected location.
+The investigation identified suspicious DLL loading behaviour consistent with DLL Search Order Hijacking. **Dism.exe**, executing from **C:\ProgramData**, loaded an unsigned **DismCore.dll** from the same directory.
 
 ### Relevant Sysmon Event IDs
 
@@ -32,7 +39,9 @@ The investigation identified DLL Search Order Hijacking involving **Dism.exe**, 
 Monitor for:
 
 •	Unsigned DLLs
+
 •	DLLs loaded from user-writable directories
+
 •	Executables loading DLLs from unexpected locations
 
 ### PowerShell Hunting Query
@@ -49,6 +58,7 @@ Get-WinEvent -Path "DLLHijack.evtx" |
 Where-Object {$_.Id -eq 7} |
 Where-Object {$_.Properties[12].Value -like "false"}
 ```
+The positional index **Properties[12]** should be verified against the Sysmon Event ID 7 schema before applying this query to other datasets.
 
 ### IOC List
 
@@ -59,19 +69,11 @@ Where-Object {$_.Properties[12].Value -like "false"}
 | Signature | False |
 | Location | ProgramData |
 
+**Detection context**: The suspicious indicator is the combination of the process path, DLL path, and unsigned signature status. These filenames alone are not malicious IOCs.
+
 ### Sigma Detection Concept
 
-title: Unsigned DLL Loaded
-
-logsource:
-  product: windows
-  category: image_load
-
-detection:
-  selection:
-    Signed: false
-
-condition: selection
+The original concept is too broad and would generate alerts for many legitimate unsigned DLLs. A more targeted Sigma-style
 
 ## 2. Unmanaged PowerShell Detection
 
