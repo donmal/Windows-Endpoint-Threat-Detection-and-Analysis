@@ -189,7 +189,7 @@ At this stage, multiple indicators converged, suggesting that the observed activ
 
 ### Figure 1 - PowerShell: Suspicious DLL Load
 
-![Figure 1 - PowerShell Suspicious DLL Load](../images/dll-hijacking/powershell-suspicious-dll-load.jpeg)
+![Figure 1](images/dll-hijacking/powershell-suspicious-dll-load.jpeg)
 
 ### Why This Event Is Suspicious
 
