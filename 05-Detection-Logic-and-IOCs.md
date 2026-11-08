@@ -75,7 +75,7 @@ detection:
 
 ### Attack Summary
 
-PowerShell was executed without powershell.exe.
+The investigation identified CLR loading within Calculator.exe and remote thread creation targeting the same process, consistent with potential unmanaged PowerShell execution. The available telemetry did not independently confirm PowerShell command execution.
 
 Instead, a legitimate Windows process hosted the .NET CLR and executed PowerShell code internally.
 
@@ -217,15 +217,19 @@ rundll32.exe
 
 ↓
 
+CreateRemoteThread 
+
+↓
+
 Calculator.exe
 
 ↓
 
-CLR Loaded
+CLR Loading Observed
 
 ↓
 
-PowerShell Executed
+Potential Unmanaged PowerShell (Not Confirmed)
 
 **Analyst Note**: This sequence represents the suspected execution chain. Process injection and subsequent PowerShell execution should be confirmed through correlated telemetry rather than inferred from process names alone.
 
@@ -249,7 +253,7 @@ This detection targets the observed source-target process combination rather tha
 
 ### Attack Summary
 
-A credential dumping operation targeted LSASS memory.
+Suspicious LSASS process access was identified, consistent with potential credential dumping activity. Successful credential extraction was not independently confirmed.
 
 Investigation identified:
 
