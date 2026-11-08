@@ -232,38 +232,6 @@ The Sysmon evidence confirms process access and the granted permissions. Memory 
 
 The investigation identified **ProcessHacker.exe** as the process responsible for accessing LSASS with extensive permissions. This activity was consistent with potential credential dumping and warranted further investigation.
 
-## Screenshots 
-
-### Figure 1. Opening LsassDump.evtx in Event Viewer for credential dumping analysis.
-
-Opening LsassDump.evtx.
-
-[INSERT SCREENSHOT]
-
-### Figure 2. PowerShell query filtering Sysmon Event ID 10 (Process Access) events targeting lsass.exe.
-
-PowerShell query filtering Event ID 10.
-
-[INSERT SCREENSHOT]
-
-### Figure 3. Event details identifying ProcessHacker.exe as the process accessing LSASS memory.
-
-SourceImage = ProcessHacker.exe.
-
-[INSERT SCREENSHOT]
-
-### Figure 4. Event details confirming lsass.exe as the target process.
-
-TargetImage = lsass.exe.
-
-[INSERT SCREENSHOT]
-
-### Figure 5. GrantedAccess value of 0x1FFFFF indicating full access permissions to LSASS memory. 
-
-GrantedAccess = 0x1FFFFF.
-
-[INSERT SCREENSHOT]
-
 ## Phase 2 – Reviewing Authentication Activity
 
 Following the identification of suspicious LSASS access, the investigation proceeded to review Windows Security logs for evidence of subsequent authentication activity potentially associated with credential misuse.
