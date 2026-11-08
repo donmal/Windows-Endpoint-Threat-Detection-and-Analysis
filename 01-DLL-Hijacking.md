@@ -261,7 +261,7 @@ was opened and filtered to display only **Event ID 7** entries. This manual vali
 
 ### Figure 2 - Event Viewer: Event ID 7
 
-![Figure 2 - Event Viewer Event ID 7](../images/dll-hijacking/event-viewer-event-id-7.jpeg)
+![Figure 2](images/dll-hijacking/event-viewer-event-id-7.jpeg)
 
 ### Reviewing Event Details
 
@@ -273,7 +273,7 @@ This confirmed the PowerShell findings.
 
 ### Figure 3 - Unsigned DLL Confirmation
 
-![Figure 3 - Unsigned DLL Confirmation](../images/dll-hijacking/unsigned-dll-confirmation.png)
+![Figure 3](images/dll-hijacking/unsigned-dll-confirmation.png)
 
 ### XML Validation
 
@@ -307,7 +307,7 @@ This provides direct evidence of:
 
 ### Figure 4 - XML: Process and DLL Path 
 
-![Figure 4 - XML Process and DLL Path](../images/dll-hijacking/xml-process-and-dll-path.png)
+![Figure 4](images/dll-hijacking/xml-process-and-dll-path.png)
 
 ### Determining the Responsible Process
 
