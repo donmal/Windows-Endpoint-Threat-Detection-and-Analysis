@@ -67,7 +67,9 @@ Topics include:
 
 ## 2. Unmanaged PowerShell and Injection
 
-Demonstrates how PowerShell can execute without spawning **powershell.exe** by hosting PowerShell through the .NET Common Language Runtime (CLR).
+Investigates potential unmanaged PowerShell execution and process injection by analyzing unexpected CLR module loading and remote thread creation.
+
+The investigation identified Calculator.exe loading clr.dll and rundll32.exe creating a remote thread within Calculator.exe. These observations were consistent with potential in-process execution and injection activity, although actual PowerShell command execution was not independently confirmed.
 
 Topics include:
 
@@ -162,16 +164,18 @@ The investigations primarily rely on:
 
 The investigations cover techniques including:
 
-| Technique | ATT&CK ID |
-|-----------|-----------|
-| DLL Search Order Hijacking | T1574.001 |
-| PowerShell | T1059.001 |
-| Process Injection | T1055 |
-| OS Credential Dumping: LSASS Memory | T1003.001 |
-| Windows Command Shell | T1059.003 |
-| System Owner/User Discovery | T1033 |
+| Technique | ATT&CK ID | Evidence Assessment |
+|-----------|-----------|-----------|
+| DLL Search Order Hijacking | T1574.001 | Consistent with observed suspicious DLL loading |
+| PowerShell | T1059.001 | Suspected: execution unconfirmed |
+| Process Injection | T1055 | Remote thread creation observed: injection payload unconfirmed |
+| OS Credential Dumping: LSASS Memory | T1003.001 | Suspicious LSASS access observed: credential extraction unconfirmed |
+| Windows Command Shell | T1059.003 | Command execution recorded  |
+| System Owner/User Discovery | T1033 | 'whoami' command execution recorded |
 
 **ATT&CK Mapping Note**: Valid Accounts (T1078) is excluded because the investigation did not identify malicious credential reuse. Process Discovery (T1057) is also excluded because the documented **whoami** command supports System Owner/User Discovery (T1033), rather than process enumeration.
+
+The ATT&CK mappings distinguish directly observed behavior from suspected techniques. Where the available telemetry does not conclusively establish malicious execution or successful exploitation, the corresponding technique is treated as an investigative hypothesis rather than a confirmed finding.
 
 ---
 
@@ -185,9 +189,9 @@ Through this project, the following SOC analyst skills are demonstrated:
 - Event correlation
 - Process behavior analysis
 - Parent-child process analysis
-- DLL Hijacking detection
-- CLR-based PowerShell detection
-- Process Injection detection
+- DLL Hijacking investigation and detection
+- Investigation of potential unmanaged PowerShell execution
+- Process Injection indicator analysis
 - LSASS credential dumping investigation
 - Authentication log analysis
 - IOC development
@@ -221,10 +225,6 @@ The investigations reinforce several important defensive principles:
 - Properly configured Sysmon deployments greatly improve Windows detection capabilities.
 - Effective threat hunting requires a structured, hypothesis-driven investigative methodology.
 
+- Suspicious telemetry should be distinguished from confirmed malicious activity to ensure accurate investigation findings and reduce false positives.
+
 ---
-
-# Disclaimer
-
-This project was created for educational and defensive cybersecurity purposes. All attack techniques were analyzed within controlled laboratory environments to improve threat hunting, detection engineering, and SOC investigation skills.
-
-The findings represent hands-on laboratory practice rather than investigations conducted in a production SOC environment. Detection examples and Sigma concepts are provided for learning and portfolio demonstration purposes.
